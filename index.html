@@ -5,72 +5,98 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Manager</title>
     <style>
-        /* Base Strict Dark Theme */
+        /* Dracula Theme Colors */
+        :root {
+            --bg: #282a36;
+            --glass: rgba(68, 71, 90, 0.7);
+            --text-main: #f8f8f2;
+            --text-sub: #6272a4;
+            --cyan: #8be9fd;
+            --green: #50fa7b;
+            --red: #ff5555;
+            --purple: #bd93f9;
+            --border: rgba(248, 248, 242, 0.1);
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
+
         body {
-            background-color: #0A0A0A; /* Deep dark background */
-            color: #ffffff; /* White text */
+            background-color: var(--bg);
+            color: var(--text-main);
             min-height: 100vh;
             padding: 20px;
             position: relative;
             overflow-x: hidden;
         }
 
-        /* Ambient background blobs to make the glassmorphism pop */
+        /* Dracula Ambient Glow */
         .bg-blob {
             position: absolute;
             width: 300px;
             height: 300px;
             border-radius: 50%;
-            background: rgba(96, 125, 139, 0.2); 
+            background: rgba(189, 147, 249, 0.15); /* Purple glow */
             filter: blur(80px);
             z-index: -1;
             top: -50px;
             left: -50px;
         }
 
-        /* Core Glassmorphism Class - Clean, 8px border */
+        /* Glassmorphism */
         .glass {
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--glass);
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px; /* Clean, minimal curve */
+            border: 1px solid var(--border);
+            border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
+            width: 100%; /* Ensure it doesn't overflow */
         }
 
-        /* Typography & Layout for Responsiveness */
-        h1, h2, h3 { font-weight: 600; margin-bottom: 15px; }
-        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        /* Typography & Layout */
+        h1, h2 { font-weight: 600; margin-bottom: 15px; color: var(--purple); }
         
-        /* Grid adapts perfectly to mobile screens */
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        /* Flex-wrap prevents things from being pushed off-screen */
+        .flex-between { 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: space-between; 
+            align-items: center; 
+            gap: 10px;
+        }
         
-        .text-sub { color: rgba(255, 255, 255, 0.6); font-size: 0.85rem; }
-        .text-green { color: #4ade80; }
-        .text-red { color: #f87171; }
-        .divider { height: 1px; background: rgba(255, 255, 255, 0.1); margin: 15px 0; }
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .text-sub { color: var(--text-sub); font-size: 0.85rem; }
+        .text-green { color: var(--green); }
+        .text-red { color: var(--red); }
+        .text-cyan { color: var(--cyan); }
+        .divider { height: 1px; background: var(--border); margin: 15px 0; width: 100%; }
 
         /* Forms & Buttons */
         input {
             width: 100%;
-            padding: 12px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 14px;
+            background: #21222c; /* Darker Dracula bg for inputs */
+            border: 1px solid var(--text-sub);
             border-radius: 8px;
-            color: white;
+            color: var(--text-main);
             margin-bottom: 12px;
             outline: none;
-            /* Ensures date picker icon is visible in dark mode */
             color-scheme: dark; 
+            font-size: 16px; /* Prevents iOS zoom issue */
         }
-        input:focus { border-color: white; }
+        input:focus { border-color: var(--purple); }
         
         button {
             width: 100%;
@@ -83,81 +109,80 @@
             transition: opacity 0.2s;
         }
         button:hover { opacity: 0.8; }
-        .btn-primary { background: white; color: black; }
-        .btn-danger { background: #ef4444; color: white; }
+        .btn-primary { background: var(--purple); color: var(--bg); }
+        .btn-danger { background: var(--red); color: var(--text-main); }
 
-        /* Debt List */
-        #debt-list { margin-top: 10px; }
-        .debt-item { margin-bottom: 10px; }
-
-        /* Modal / Reminder Popup */
+        /* Modal */
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(40, 42, 54, 0.85);
             display: none; justify-content: center; align-items: center; z-index: 100;
             backdrop-filter: blur(5px);
         }
         .modal-content { max-width: 400px; width: 90%; text-align: center; }
-        .warning-icon { font-size: 40px; color: #f87171; margin-bottom: 10px; }
-
-        /* Extra responsive tweak for very small phones */
-        @media (max-width: 350px) {
-            .grid-2 { grid-template-columns: 1fr; text-align: left !important; }
-            .grid-2 > div { text-align: left !important; }
-        }
+        .warning-icon { font-size: 40px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
     <div class="bg-blob"></div>
 
-    <div style="max-width: 600px; margin: 0 auto;">
+    <div style="max-width: 600px; margin: 0 auto; width: 100%;">
         <h1 style="text-align: center;">My Manager</h1>
 
         <div class="glass">
             <div class="flex-between">
                 <span>Weekly Salary:</span>
-                <strong>₱<span id="display-salary">5000.00</span></strong>
+                <strong class="text-cyan">PHP <span id="display-salary">5000.00</span></strong>
             </div>
+            
             <div class="divider"></div>
-            <div class="text-sub">Monthly Overview (Based on 4 weeks)</div>
-            <div class="grid-2" style="margin-top: 10px;">
-                <div>
-                    <div class="text-sub">Est. Income</div>
-                    <strong class="text-green" style="font-size: 1.2rem;">₱<span id="display-income">20000.00</span></strong>
+            
+            <div class="text-sub" style="margin-bottom: 12px;">Monthly Overview (Based on 4 weeks)</div>
+            
+            <div class="flex-between">
+                <div class="stat-box">
+                    <span class="text-sub">Est. Income</span>
+                    <strong class="text-green" style="font-size: 1.2rem;">PHP <span id="display-income">20000.00</span></strong>
                 </div>
-                <div style="text-align: right;">
-                    <div class="text-sub">Total Debt</div>
-                    <strong class="text-red" style="font-size: 1.2rem;">₱<span id="display-total-debt">0.00</span></strong>
+                <div class="stat-box" style="text-align: right;">
+                    <span class="text-sub">Total Debt</span>
+                    <strong class="text-red" style="font-size: 1.2rem;">PHP <span id="display-total-debt">0.00</span></strong>
                 </div>
             </div>
+            
             <div class="divider"></div>
+            
             <div class="flex-between">
                 <span>Remaining Buffer</span>
-                <strong id="display-buffer" style="font-size: 1.2rem;">₱20000.00</strong>
+                <strong id="display-buffer" style="font-size: 1.2rem;">PHP 20000.00</strong>
             </div>
         </div>
 
         <div class="glass">
-            <h2>Add New Debt</h2>
-            <input type="text" id="debt-name" placeholder="What is this debt for? (e.g. Rent, Bill)">
-            <input type="number" id="debt-amount" placeholder="Amount (₱)">
+            <h2 style="font-size: 1.2rem;">Add New Debt</h2>
+            <input type="text" id="debt-name" placeholder="What is this debt for? (e.g. Rent)">
+            <input type="number" id="debt-amount" placeholder="Amount (PHP)">
+            
             <input type="date" id="debt-date">
+            
             <button class="btn-primary" onclick="processDebt()">Calculate & Save</button>
         </div>
 
-        <h2>Active Debts</h2>
-        <div id="debt-list">
-            <div class="text-sub" id="empty-state">No debts tracked yet. You're clear!</div>
+        <h2 style="font-size: 1.2rem;">Active Debts</h2>
+        <div id="debt-list" style="margin-top: 10px;">
+            <div class="glass text-sub" id="empty-state" style="text-align: center;">
+                No debts tracked yet. You're clear!
+            </div>
         </div>
     </div>
 
     <div class="modal-overlay" id="warning-modal">
         <div class="glass modal-content">
-            <div class="warning-icon">⚠️</div>
-            <h2>Hold up!</h2>
-            <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px;">
-                Adding this debt exceeds your estimated monthly capacity based on your weekly salary. You won't be able to easily repay this. Re-evaluate your budget.
+            <div class="warning-icon">🛑</div>
+            <h2 class="text-red">Hold up!</h2>
+            <p style="color: var(--text-main); margin-bottom: 20px; font-size: 0.95rem; line-height: 1.5;">
+                Adding this debt exceeds your estimated monthly capacity based on your weekly salary. Re-evaluate your budget.
             </p>
             <button class="btn-danger" onclick="closeModal()">I Understand</button>
         </div>
@@ -172,24 +197,17 @@
         document.getElementById('debt-date').valueAsDate = new Date();
 
         // Format Currency Helper
-        function formatPHP(amount) {
+        function formatMoney(amount) {
             return parseFloat(amount).toFixed(2);
         }
 
-        // --- NEW: Custom Date Formatter (e.g., "Jun 2, 2026") ---
+        // Custom Date Formatter
+        // This converts the phone's native "YYYY-MM-DD" into "Jun 14, 2026" for the list below.
         function formatDisplayDate(dateString) {
-            // Split the "YYYY-MM-DD" string from the input
             const [year, month, day] = dateString.split('-');
-            
-            // Create an array of short month names
             const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            
-            // Convert month string to index (0-11)
             const monthIndex = parseInt(month, 10) - 1;
-            
-            // Strip leading zero from day if it exists (e.g., "02" becomes "2")
             const cleanDay = parseInt(day, 10);
-            
             return `${monthNames[monthIndex]} ${cleanDay}, ${year}`;
         }
 
@@ -198,26 +216,26 @@
             const estimatedIncome = weeklySalary * 4;
             let totalDebt = 0;
             
-            // Calculate sum of all debts
             for(let i = 0; i < debts.length; i++) {
                 totalDebt += debts[i].amount;
             }
 
             const remainingBuffer = estimatedIncome - totalDebt;
 
-            // Update UI text
-            document.getElementById('display-salary').innerText = formatPHP(weeklySalary);
-            document.getElementById('display-income').innerText = formatPHP(estimatedIncome);
-            document.getElementById('display-total-debt').innerText = formatPHP(totalDebt);
+            // Update UI
+            document.getElementById('display-salary').innerText = formatMoney(weeklySalary);
+            document.getElementById('display-income').innerText = formatMoney(estimatedIncome);
+            document.getElementById('display-total-debt').innerText = formatMoney(totalDebt);
             
             const bufferElement = document.getElementById('display-buffer');
-            bufferElement.innerText = '₱' + formatPHP(remainingBuffer);
+            bufferElement.innerText = 'PHP ' + formatMoney(remainingBuffer);
             
             if(remainingBuffer < 0) {
                 bufferElement.classList.add('text-red');
                 bufferElement.classList.remove('text-green');
             } else {
                 bufferElement.classList.remove('text-red');
+                bufferElement.classList.add('text-green');
             }
 
             renderDebtList();
@@ -234,22 +252,21 @@
                 return;
             }
 
-            // Current totals
             const estimatedIncome = weeklySalary * 4;
             let currentTotalDebt = 0;
             debts.forEach(d => currentTotalDebt += d.amount);
 
-            // THE BLOCKER: If new total exceeds income, stop them.
+            // Blocker Logic
             if((currentTotalDebt + amountInput) > estimatedIncome) {
                 document.getElementById('warning-modal').style.display = 'flex';
                 return;
             }
 
-            // Add to array if safe
+            // Save Debt
             debts.push({
                 name: nameInput,
                 amount: amountInput,
-                date: dateInput // Storing "YYYY-MM-DD" internally
+                date: dateInput
             });
 
             // Clear inputs
@@ -271,34 +288,31 @@
                 return;
             }
 
-            // Clear list
             listContainer.innerHTML = '';
 
-            // Generate HTML for each debt
             debts.forEach(debt => {
                 const debtDiv = document.createElement('div');
-                debtDiv.className = 'glass debt-item flex-between';
+                debtDiv.className = 'glass flex-between';
+                debtDiv.style.marginBottom = '10px';
                 
-                // Format the stored date right before displaying it
+                // Formats it to Jun 14, 2026 here!
                 const prettyDate = formatDisplayDate(debt.date);
 
                 debtDiv.innerHTML = `
-                    <div>
-                        <strong style="font-size: 1.1rem;">${debt.name}</strong>
+                    <div style="flex: 1;">
+                        <strong style="font-size: 1.1rem; color: var(--purple);">${debt.name}</strong>
                         <div class="text-sub" style="margin-top: 4px;">Due: ${prettyDate}</div>
                     </div>
-                    <strong class="text-red" style="font-size: 1.1rem;">₱${formatPHP(debt.amount)}</strong>
+                    <strong class="text-red" style="font-size: 1.1rem;">PHP ${formatMoney(debt.amount)}</strong>
                 `;
                 listContainer.appendChild(debtDiv);
             });
         }
 
-        // Modal Logic
         function closeModal() {
             document.getElementById('warning-modal').style.display = 'none';
         }
 
-        // Initial render
         updateDashboard();
     </script>
 </body>
