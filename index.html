@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Manager</title>
     <style>
-        /* Base Dark Theme */
+        /* Base Strict Dark Theme */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -13,8 +13,8 @@
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
         body {
-            background-color: #0A0A0A;
-            color: #ffffff;
+            background-color: #0A0A0A; /* Deep dark background */
+            color: #ffffff; /* White text */
             min-height: 100vh;
             padding: 20px;
             position: relative;
@@ -27,7 +27,7 @@
             width: 300px;
             height: 300px;
             border-radius: 50%;
-            background: rgba(96, 125, 139, 0.2); /* Subtle blue-grey */
+            background: rgba(96, 125, 139, 0.2); 
             filter: blur(80px);
             z-index: -1;
             top: -50px;
@@ -40,15 +40,18 @@
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
+            border-radius: 8px; /* Clean, minimal curve */
             padding: 20px;
             margin-bottom: 20px;
         }
 
-        /* Typography & Layout */
+        /* Typography & Layout for Responsiveness */
         h1, h2, h3 { font-weight: 600; margin-bottom: 15px; }
         .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        
+        /* Grid adapts perfectly to mobile screens */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        
         .text-sub { color: rgba(255, 255, 255, 0.6); font-size: 0.85rem; }
         .text-green { color: #4ade80; }
         .text-red { color: #f87171; }
@@ -64,6 +67,8 @@
             color: white;
             margin-bottom: 12px;
             outline: none;
+            /* Ensures date picker icon is visible in dark mode */
+            color-scheme: dark; 
         }
         input:focus { border-color: white; }
         
@@ -94,6 +99,12 @@
         }
         .modal-content { max-width: 400px; width: 90%; text-align: center; }
         .warning-icon { font-size: 40px; color: #f87171; margin-bottom: 10px; }
+
+        /* Extra responsive tweak for very small phones */
+        @media (max-width: 350px) {
+            .grid-2 { grid-template-columns: 1fr; text-align: left !important; }
+            .grid-2 > div { text-align: left !important; }
+        }
     </style>
 </head>
 <body>
@@ -103,7 +114,6 @@
     <div style="max-width: 600px; margin: 0 auto;">
         <h1 style="text-align: center;">My Manager</h1>
 
-        <!-- Dashboard Stats -->
         <div class="glass">
             <div class="flex-between">
                 <span>Weekly Salary:</span>
@@ -128,7 +138,6 @@
             </div>
         </div>
 
-        <!-- Add Debt Form -->
         <div class="glass">
             <h2>Add New Debt</h2>
             <input type="text" id="debt-name" placeholder="What is this debt for? (e.g. Rent, Bill)">
@@ -137,14 +146,12 @@
             <button class="btn-primary" onclick="processDebt()">Calculate & Save</button>
         </div>
 
-        <!-- Debt List -->
         <h2>Active Debts</h2>
         <div id="debt-list">
             <div class="text-sub" id="empty-state">No debts tracked yet. You're clear!</div>
         </div>
     </div>
 
-    <!-- Warning Modal -->
     <div class="modal-overlay" id="warning-modal">
         <div class="glass modal-content">
             <div class="warning-icon">⚠️</div>
@@ -167,6 +174,23 @@
         // Format Currency Helper
         function formatPHP(amount) {
             return parseFloat(amount).toFixed(2);
+        }
+
+        // --- NEW: Custom Date Formatter (e.g., "Jun 2, 2026") ---
+        function formatDisplayDate(dateString) {
+            // Split the "YYYY-MM-DD" string from the input
+            const [year, month, day] = dateString.split('-');
+            
+            // Create an array of short month names
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            
+            // Convert month string to index (0-11)
+            const monthIndex = parseInt(month, 10) - 1;
+            
+            // Strip leading zero from day if it exists (e.g., "02" becomes "2")
+            const cleanDay = parseInt(day, 10);
+            
+            return `${monthNames[monthIndex]} ${cleanDay}, ${year}`;
         }
 
         // Update Dashboard Logic
@@ -225,7 +249,7 @@
             debts.push({
                 name: nameInput,
                 amount: amountInput,
-                date: dateInput
+                date: dateInput // Storing "YYYY-MM-DD" internally
             });
 
             // Clear inputs
@@ -254,12 +278,16 @@
             debts.forEach(debt => {
                 const debtDiv = document.createElement('div');
                 debtDiv.className = 'glass debt-item flex-between';
+                
+                // Format the stored date right before displaying it
+                const prettyDate = formatDisplayDate(debt.date);
+
                 debtDiv.innerHTML = `
                     <div>
-                        <strong>${debt.name}</strong>
-                        <div class="text-sub">Due: ${debt.date}</div>
+                        <strong style="font-size: 1.1rem;">${debt.name}</strong>
+                        <div class="text-sub" style="margin-top: 4px;">Due: ${prettyDate}</div>
                     </div>
-                    <strong class="text-red">₱${formatPHP(debt.amount)}</strong>
+                    <strong class="text-red" style="font-size: 1.1rem;">₱${formatPHP(debt.amount)}</strong>
                 `;
                 listContainer.appendChild(debtDiv);
             });
