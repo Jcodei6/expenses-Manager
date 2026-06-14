@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Manager</title>
-     <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json">
     <style>
-        /* Dracula Theme Colors */
         :root {
             --bg: #282a36;
             --glass: rgba(68, 71, 90, 0.7);
@@ -35,20 +34,18 @@
             overflow-x: hidden;
         }
 
-        /* Dracula Ambient Glow */
         .bg-blob {
             position: absolute;
             width: 300px;
             height: 300px;
             border-radius: 50%;
-            background: rgba(189, 147, 249, 0.15); /* Purple glow */
+            background: rgba(189, 147, 249, 0.15);
             filter: blur(80px);
             z-index: -1;
             top: -50px;
             left: -50px;
         }
 
-        /* Glassmorphism */
         .glass {
             background: var(--glass);
             backdrop-filter: blur(15px);
@@ -57,13 +54,11 @@
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
-            width: 100%; /* Ensure it doesn't overflow */
+            width: 100%;
         }
 
-        /* Typography & Layout */
         h1, h2 { font-weight: 600; margin-bottom: 15px; color: var(--purple); }
         
-        /* Flex-wrap prevents things from being pushed off-screen */
         .flex-between { 
             display: flex; 
             flex-wrap: wrap; 
@@ -72,30 +67,24 @@
             gap: 10px;
         }
         
-        .stat-box {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
+        .stat-box { display: flex; flex-direction: column; gap: 4px; }
         .text-sub { color: var(--text-sub); font-size: 0.85rem; }
         .text-green { color: var(--green); }
         .text-red { color: var(--red); }
         .text-cyan { color: var(--cyan); }
         .divider { height: 1px; background: var(--border); margin: 15px 0; width: 100%; }
 
-        /* Forms & Buttons */
         input {
             width: 100%;
             padding: 14px;
-            background: #21222c; /* Darker Dracula bg for inputs */
+            background: #21222c;
             border: 1px solid var(--text-sub);
             border-radius: 8px;
             color: var(--text-main);
             margin-bottom: 12px;
             outline: none;
             color-scheme: dark; 
-            font-size: 16px; /* Prevents iOS zoom issue */
+            font-size: 16px;
         }
         input:focus { border-color: var(--purple); }
         
@@ -113,7 +102,6 @@
         .btn-primary { background: var(--purple); color: var(--bg); }
         .btn-danger { background: var(--red); color: var(--text-main); }
 
-        /* Modal */
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(40, 42, 54, 0.85);
@@ -134,7 +122,10 @@
         <div class="glass">
             <div class="flex-between">
                 <span>Weekly Salary:</span>
-                <strong class="text-cyan">PHP <span id="display-salary">5000.00</span></strong>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <strong class="text-cyan">PHP <span id="display-salary">0.00</span></strong>
+                    <button class="btn-primary" onclick="editSalary()" style="width: auto; padding: 6px 12px; font-size: 0.8rem; border-radius: 4px;">✎ Edit</button>
+                </div>
             </div>
             
             <div class="divider"></div>
@@ -144,7 +135,7 @@
             <div class="flex-between">
                 <div class="stat-box">
                     <span class="text-sub">Est. Income</span>
-                    <strong class="text-green" style="font-size: 1.2rem;">PHP <span id="display-income">20000.00</span></strong>
+                    <strong class="text-green" style="font-size: 1.2rem;">PHP <span id="display-income">0.00</span></strong>
                 </div>
                 <div class="stat-box" style="text-align: right;">
                     <span class="text-sub">Total Debt</span>
@@ -156,7 +147,7 @@
             
             <div class="flex-between">
                 <span>Remaining Buffer</span>
-                <strong id="display-buffer" style="font-size: 1.2rem;">PHP 20000.00</strong>
+                <strong id="display-buffer" style="font-size: 1.2rem;">PHP 0.00</strong>
             </div>
         </div>
 
@@ -164,9 +155,7 @@
             <h2 style="font-size: 1.2rem;">Add New Debt</h2>
             <input type="text" id="debt-name" placeholder="What is this debt for? (e.g. Rent)">
             <input type="number" id="debt-amount" placeholder="Amount (PHP)">
-            
             <input type="date" id="debt-date">
-            
             <button class="btn-primary" onclick="processDebt()">Calculate & Save</button>
         </div>
 
@@ -190,30 +179,52 @@
     </div>
 
     <script>
-        // Core Variables
-        let weeklySalary = 5000;
-        let debts = [];
+        // === CORE SAVING LOGIC ===
+        // Pulls saved data from phone's hard drive, defaults to 5000 if empty.
+        let savedSalary = localStorage.getItem('myManager_salary');
+        let weeklySalary = savedSalary ? parseFloat(savedSalary) : 5000;
+        
+        let savedDebts = localStorage.getItem('myManager_debts');
+        let debts = savedDebts ? JSON.parse(savedDebts) : [];
 
-        // Set default date to today
+        // Set default date picker to today
         document.getElementById('debt-date').valueAsDate = new Date();
 
-        // Format Currency Helper
         function formatMoney(amount) {
             return parseFloat(amount).toFixed(2);
         }
 
-        // Custom Date Formatter
-        // This converts the phone's native "YYYY-MM-DD" into "Jun 14, 2026" for the list below.
         function formatDisplayDate(dateString) {
             const [year, month, day] = dateString.split('-');
             const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            const monthIndex = parseInt(month, 10) - 1;
-            const cleanDay = parseInt(day, 10);
-            return `${monthNames[monthIndex]} ${cleanDay}, ${year}`;
+            return `${monthNames[parseInt(month, 10) - 1]} ${parseInt(day, 10)}, ${year}`;
         }
 
-        // Update Dashboard Logic
+        function editSalary() {
+            let newSalary = prompt("Enter your new weekly salary (PHP):", weeklySalary);
+            if (newSalary !== null && newSalary.trim() !== "") {
+                let parsed = parseFloat(newSalary);
+                if (!isNaN(parsed) && parsed >= 0) {
+                    weeklySalary = parsed;
+                    updateDashboard(); 
+                } else {
+                    alert("Please enter a valid number.");
+                }
+            }
+        }
+
+        function removeDebt(index) {
+            if(confirm("Are you sure you want to mark this as paid and remove it?")) {
+                debts.splice(index, 1);
+                updateDashboard();
+            }
+        }
+
         function updateDashboard() {
+            // INSTANT SAVE: Locks data into phone memory whenever updated
+            localStorage.setItem('myManager_salary', weeklySalary);
+            localStorage.setItem('myManager_debts', JSON.stringify(debts));
+
             const estimatedIncome = weeklySalary * 4;
             let totalDebt = 0;
             
@@ -242,7 +253,6 @@
             renderDebtList();
         }
 
-        // Add Debt Logic
         function processDebt() {
             const nameInput = document.getElementById('debt-name').value;
             const amountInput = parseFloat(document.getElementById('debt-amount').value);
@@ -257,13 +267,12 @@
             let currentTotalDebt = 0;
             debts.forEach(d => currentTotalDebt += d.amount);
 
-            // Blocker Logic
             if((currentTotalDebt + amountInput) > estimatedIncome) {
                 document.getElementById('warning-modal').style.display = 'flex';
                 return;
             }
 
-            // Save Debt
+            // Adds new debt to the list
             debts.push({
                 name: nameInput,
                 amount: amountInput,
@@ -274,10 +283,10 @@
             document.getElementById('debt-name').value = '';
             document.getElementById('debt-amount').value = '';
 
+            // Triggers the instant save
             updateDashboard();
         }
 
-        // Render List Logic
         function renderDebtList() {
             const listContainer = document.getElementById('debt-list');
             const emptyState = document.getElementById('empty-state');
@@ -291,12 +300,11 @@
 
             listContainer.innerHTML = '';
 
-            debts.forEach(debt => {
+            debts.forEach((debt, index) => {
                 const debtDiv = document.createElement('div');
                 debtDiv.className = 'glass flex-between';
                 debtDiv.style.marginBottom = '10px';
                 
-                // Formats it to Jun 14, 2026 here!
                 const prettyDate = formatDisplayDate(debt.date);
 
                 debtDiv.innerHTML = `
@@ -304,7 +312,10 @@
                         <strong style="font-size: 1.1rem; color: var(--purple);">${debt.name}</strong>
                         <div class="text-sub" style="margin-top: 4px;">Due: ${prettyDate}</div>
                     </div>
-                    <strong class="text-red" style="font-size: 1.1rem;">PHP ${formatMoney(debt.amount)}</strong>
+                    <div style="text-align: right;">
+                        <strong class="text-red" style="font-size: 1.1rem; display: block;">PHP ${formatMoney(debt.amount)}</strong>
+                        <button onclick="removeDebt(${index})" style="width: auto; padding: 4px 8px; margin-top: 8px; font-size: 0.75rem; background: transparent; color: var(--text-sub); border: 1px solid var(--text-sub);">Mark Paid</button>
+                    </div>
                 `;
                 listContainer.appendChild(debtDiv);
             });
@@ -314,6 +325,15 @@
             document.getElementById('warning-modal').style.display = 'none';
         }
 
+        // Boot Service Worker with forces update command
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then(reg => {
+                reg.update(); // Forces browser to check for new code
+                console.log('Service Worker Registered');
+            });
+        }
+
+        // Run on startup to load saved data
         updateDashboard();
     </script>
 </body>
