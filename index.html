@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Manager</title>
+    <style>
+        /* Base Dark Theme */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background-color: #0A0A0A;
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Ambient background blobs to make the glassmorphism pop */
+        .bg-blob {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: rgba(96, 125, 139, 0.2); /* Subtle blue-grey */
+            filter: blur(80px);
+            z-index: -1;
+            top: -50px;
+            left: -50px;
+        }
+
+        /* Core Glassmorphism Class - Clean, 8px border */
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Typography & Layout */
+        h1, h2, h3 { font-weight: 600; margin-bottom: 15px; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .text-sub { color: rgba(255, 255, 255, 0.6); font-size: 0.85rem; }
+        .text-green { color: #4ade80; }
+        .text-red { color: #f87171; }
+        .divider { height: 1px; background: rgba(255, 255, 255, 0.1); margin: 15px 0; }
+
+        /* Forms & Buttons */
+        input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            margin-bottom: 12px;
+            outline: none;
+        }
+        input:focus { border-color: white; }
+        
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.8; }
+        .btn-primary { background: white; color: black; }
+        .btn-danger { background: #ef4444; color: white; }
+
+        /* Debt List */
+        #debt-list { margin-top: 10px; }
+        .debt-item { margin-bottom: 10px; }
+
+        /* Modal / Reminder Popup */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none; justify-content: center; align-items: center; z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+        .modal-content { max-width: 400px; width: 90%; text-align: center; }
+        .warning-icon { font-size: 40px; color: #f87171; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="bg-blob"></div>
+
+    <div style="max-width: 600px; margin: 0 auto;">
+        <h1 style="text-align: center;">My Manager</h1>
+
+        <!-- Dashboard Stats -->
+        <div class="glass">
+            <div class="flex-between">
+                <span>Weekly Salary:</span>
+                <strong>₱<span id="display-salary">5000.00</span></strong>
+            </div>
+            <div class="divider"></div>
+            <div class="text-sub">Monthly Overview (Based on 4 weeks)</div>
+            <div class="grid-2" style="margin-top: 10px;">
+                <div>
+                    <div class="text-sub">Est. Income</div>
+                    <strong class="text-green" style="font-size: 1.2rem;">₱<span id="display-income">20000.00</span></strong>
+                </div>
+                <div style="text-align: right;">
+                    <div class="text-sub">Total Debt</div>
+                    <strong class="text-red" style="font-size: 1.2rem;">₱<span id="display-total-debt">0.00</span></strong>
+                </div>
+            </div>
+            <div class="divider"></div>
+            <div class="flex-between">
+                <span>Remaining Buffer</span>
+                <strong id="display-buffer" style="font-size: 1.2rem;">₱20000.00</strong>
+            </div>
+        </div>
+
+        <!-- Add Debt Form -->
+        <div class="glass">
+            <h2>Add New Debt</h2>
+            <input type="text" id="debt-name" placeholder="What is this debt for? (e.g. Rent, Bill)">
+            <input type="number" id="debt-amount" placeholder="Amount (₱)">
+            <input type="date" id="debt-date">
+            <button class="btn-primary" onclick="processDebt()">Calculate & Save</button>
+        </div>
+
+        <!-- Debt List -->
+        <h2>Active Debts</h2>
+        <div id="debt-list">
+            <div class="text-sub" id="empty-state">No debts tracked yet. You're clear!</div>
+        </div>
+    </div>
+
+    <!-- Warning Modal -->
+    <div class="modal-overlay" id="warning-modal">
+        <div class="glass modal-content">
+            <div class="warning-icon">⚠️</div>
+            <h2>Hold up!</h2>
+            <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px;">
+                Adding this debt exceeds your estimated monthly capacity based on your weekly salary. You won't be able to easily repay this. Re-evaluate your budget.
+            </p>
+            <button class="btn-danger" onclick="closeModal()">I Understand</button>
+        </div>
+    </div>
+
+    <script>
+        // Core Variables
+        let weeklySalary = 5000;
+        let debts = [];
+
+        // Set default date to today
+        document.getElementById('debt-date').valueAsDate = new Date();
+
+        // Format Currency Helper
+        function formatPHP(amount) {
+            return parseFloat(amount).toFixed(2);
+        }
+
+        // Update Dashboard Logic
+        function updateDashboard() {
+            const estimatedIncome = weeklySalary * 4;
+            let totalDebt = 0;
+            
+            // Calculate sum of all debts
+            for(let i = 0; i < debts.length; i++) {
+                totalDebt += debts[i].amount;
+            }
+
+            const remainingBuffer = estimatedIncome - totalDebt;
+
+            // Update UI text
+            document.getElementById('display-salary').innerText = formatPHP(weeklySalary);
+            document.getElementById('display-income').innerText = formatPHP(estimatedIncome);
+            document.getElementById('display-total-debt').innerText = formatPHP(totalDebt);
+            
+            const bufferElement = document.getElementById('display-buffer');
+            bufferElement.innerText = '₱' + formatPHP(remainingBuffer);
+            
+            if(remainingBuffer < 0) {
+                bufferElement.classList.add('text-red');
+                bufferElement.classList.remove('text-green');
+            } else {
+                bufferElement.classList.remove('text-red');
+            }
+
+            renderDebtList();
+        }
+
+        // Add Debt Logic
+        function processDebt() {
+            const nameInput = document.getElementById('debt-name').value;
+            const amountInput = parseFloat(document.getElementById('debt-amount').value);
+            const dateInput = document.getElementById('debt-date').value;
+
+            if(!nameInput || isNaN(amountInput) || amountInput <= 0) {
+                alert("Please enter a valid name and amount.");
+                return;
+            }
+
+            // Current totals
+            const estimatedIncome = weeklySalary * 4;
+            let currentTotalDebt = 0;
+            debts.forEach(d => currentTotalDebt += d.amount);
+
+            // THE BLOCKER: If new total exceeds income, stop them.
+            if((currentTotalDebt + amountInput) > estimatedIncome) {
+                document.getElementById('warning-modal').style.display = 'flex';
+                return;
+            }
+
+            // Add to array if safe
+            debts.push({
+                name: nameInput,
+                amount: amountInput,
+                date: dateInput
+            });
+
+            // Clear inputs
+            document.getElementById('debt-name').value = '';
+            document.getElementById('debt-amount').value = '';
+
+            updateDashboard();
+        }
+
+        // Render List Logic
+        function renderDebtList() {
+            const listContainer = document.getElementById('debt-list');
+            const emptyState = document.getElementById('empty-state');
+
+            if(debts.length === 0) {
+                emptyState.style.display = 'block';
+                listContainer.innerHTML = '';
+                listContainer.appendChild(emptyState);
+                return;
+            }
+
+            // Clear list
+            listContainer.innerHTML = '';
+
+            // Generate HTML for each debt
+            debts.forEach(debt => {
+                const debtDiv = document.createElement('div');
+                debtDiv.className = 'glass debt-item flex-between';
+                debtDiv.innerHTML = `
+                    <div>
+                        <strong>${debt.name}</strong>
+                        <div class="text-sub">Due: ${debt.date}</div>
+                    </div>
+                    <strong class="text-red">₱${formatPHP(debt.amount)}</strong>
+                `;
+                listContainer.appendChild(debtDiv);
+            });
+        }
+
+        // Modal Logic
+        function closeModal() {
+            document.getElementById('warning-modal').style.display = 'none';
+        }
+
+        // Initial render
+        updateDashboard();
+    </script>
+</body>
+</html>
